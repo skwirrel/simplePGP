@@ -5,7 +5,7 @@ This is a very simple and limited browser based PGP encryption/decryption utilit
 
 Demo
 ====
-You can it from any browser straight from GitHub just visit (https://skwirrel.github.io/simplePGP/pgp.html).
+You can it from any browser straight from GitHub just visit [https://skwirrel.github.io/simplePGP/pgp.html].
 
 *N.B. The files you choose during the encryption/decryption process never leave your machine and are encrypted/decrypted by javascript running in the browser. The code runs entirely client-side.*
 
@@ -61,7 +61,7 @@ Typically these files will be created with a ".asc" extension. If it isn't ascii
 
 **Step 2**
 
-Bring up simplePGP in your browser for example by going to (https://skwirrel.github.io/simplePGP/pgp.html)
+Bring up simplePGP in your browser for example by going to [https://skwirrel.github.io/simplePGP/pgp.html]
 
 **Step 3**
 
