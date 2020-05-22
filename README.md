@@ -1,7 +1,7 @@
 simplePGP
 =========
 
-This is a very simple browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/)
+This is a very simple and limited browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/)
 
 Demo
 ====
@@ -14,7 +14,7 @@ Using simplePGP
 
 Limitations
 -----------
-- This code simply does the encryption/decryption. It does not manag keyrings, keys, trust etc.
+- This code simply does the encryption/decryption. It does not manage keys, keyrings, trust etc.
 - It does not currently support signing or verifying signatures.
 - It can only handle ascii-armoured files (both for keys and for encrypted data).
 - It does not handle generation of keys yet - you will have to do that elsewhere (e.g. using https://gnupg.org/ )
@@ -22,7 +22,7 @@ Limitations
 Suggested Use
 -------------
 
-*** Storing Keys
+### Storing Keys
 
 Create a folder to store your keys - you could call it "keyring".
 e.g.
@@ -45,7 +45,7 @@ Obviously this will read "PRIVATE" instead of "PUBLIC" if you're looking at a pr
 
 You should store your private key somewhere where other's can't see it. It must also be protected with a strong passphrase (which you setup when you created the private key).
 
-*** Decrypting an Encrypted Message
+### Decrypting an Encrypted Message
 
 **Step 1**
 
@@ -86,3 +86,7 @@ The file will be decrypted by your browser and a file download popup will appear
 **Step 8**
 
 Choose somewhere to save the decrypted file and you are all done.
+
+### Encrypting a Message
+
+Not implemented yet!
