@@ -47,7 +47,6 @@
 	</style>
 	
 	<script src="javascript/jquery.js" ></script>
-	<script src="javascript/FileSaver.min.js" ></script>
 	<script src="javascript/openpgp.min.js"></script>
 	<script>
 	
@@ -131,7 +130,6 @@
 					} catch (error) {
 						await openpgp.destroyWorker();
 						showError(error.message);
-						console.log(error);
 						return false;
 					}
 
@@ -139,13 +137,14 @@
 					var encrypted = uploadedFiles.encryptedFile.contents;
 					var decrypted;
 					try {
-						console.log( encrypted );
-						console.log( privateKey );
-						const { data: decrypted } = await openpgp.decrypt({
+						var decryptOutput = await openpgp.decrypt({
+							format: 'binary',
 							message: await openpgp.message.readArmored(encrypted),              // parse armored message
 							// publicKeys: (await openpgp.key.readArmored(publicKeyArmored)).keys, // for verification (optional)
 							privateKeys: [privateKey]                                           // for decryption
 						});
+						decrypted = decryptOutput.data;
+						console.log(decryptOutput.data);
 					} catch (error) {
 						await openpgp.destroyWorker();
 						var message = error.message;
@@ -154,7 +153,6 @@
 						return false;
 					}
 						
-					console.log(uploadedFiles.encryptedFile);
 					filename = uploadedFiles.encryptedFile.filename.replace(/.asc$/,'');
 					downloadBlob(decrypted, filename, 'application/octet-stream');
 					$('#UI').hide();
@@ -177,17 +175,11 @@
 
 			// first file selected by user
 			var file = files[0];
-			console.log(file);
 			
 			// perform validation on file type & size if required
 
 			// read the file
 			var reader = new FileReader();
-
-			// file reading started
-			reader.addEventListener('loadstart', function() {
-				console.log('File reading started');
-			});
 
 			// file reading finished successfully
 			reader.addEventListener('load', function(e) {
@@ -202,7 +194,6 @@
 				
 				if (fileEventHandlers[self.attr('onload')]) fileEventHandlers[self.attr('onload')]()
 				
-				console.log(text);
 			});
 
 			// file reading failed
