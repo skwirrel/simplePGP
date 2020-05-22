@@ -144,7 +144,6 @@
 							privateKeys: [privateKey]                                           // for decryption
 						});
 						decrypted = decryptOutput.data;
-						console.log(decryptOutput.data);
 					} catch (error) {
 						await openpgp.destroyWorker();
 						var message = error.message;
