@@ -1,0 +1,266 @@
+<html>
+<head>
+	<style>
+		body {
+			font-family: arial, sans-serif;
+		}
+		.hideOnLoad { display: none; }
+
+		#chooseAction button {
+			border: 2px solid red;
+			padding: 10px;
+			font-size: 30px;
+		}
+
+		#decryptUI {
+			line-height: 40px;
+		}
+		
+		#decryptUI div {
+			padding: 10px;
+		}
+		
+		#decryptUI .active {
+			border: 2px solid red;
+		}
+			
+		#decryptUI > div::before {
+			display: block;
+			float: left;
+			color: red;
+			font-size: 40px;
+			padding-right: 10px;
+		}
+		
+		#decryptUI #choosePrivateKeyFile::before {
+			content: 'Step 1';
+		}
+		
+		#decryptUI #enterPassphrase::before {
+			content: 'Step 2';
+		}
+
+		#decryptUI #chooseEncryptedFile::before {
+			content: 'Step 3';
+		}
+		
+	</style>
+	
+	<script src="javascript/jquery.js" ></script>
+	<script src="javascript/FileSaver.min.js" ></script>
+	<script src="javascript/openpgp.min.js"></script>
+	<script>
+	
+
+	window.onunload = function(event) {
+		(async () => {
+			await openpgp.destroyWorker();
+		})();
+	};
+	
+	function downloadBlob(data, fileName, mimeType) {
+	  var blob, url;
+	  blob = new Blob([data], {
+		type: mimeType
+	  });
+	  url = window.URL.createObjectURL(blob);
+	  downloadURL(url, fileName);
+	  setTimeout(function() {
+		return window.URL.revokeObjectURL(url);
+	  }, 1000);
+	};
+
+	function downloadURL(data, fileName) {
+	  var a;
+	  a = document.createElement('a');
+	  a.href = data;
+	  a.download = fileName;
+	  document.body.appendChild(a);
+	  a.style = 'display: none';
+	  a.click();
+	  a.remove();
+	};
+		
+	$(function(){
+		
+		var uploadedFiles = {};
+	
+		$('#decryptButton').on('click',function(){
+			$('#decryptUI').show();
+			$('#choosePrivateKeyFile input').focus();
+			$('#chooseAction').hide();
+		});
+		
+		$('#chooseEncryptedFile').on('focusin',function() {
+			$('#enterPassphrase').removeClass('active');
+			$(this).addClass('active');
+		});
+		
+		var fileEventHandlers = {
+			'getEncryptedFile' : function() {
+				$('#choosePrivateKeyFile').removeClass('active');
+				$('#enterPassphrase').show().addClass('active');
+				$('#chooseEncryptedFile').show();
+				$('#passphrase').focus();
+			},
+			'decrypt' : function() {
+				$('#decrypting').show();
+				
+				(async () => {
+					
+					var showError = function(message) {
+						$('#UI').hide();
+						$('#error').show();
+						$('#error .message').html(message);
+					}
+					
+					await openpgp.initWorker({ path: 'javascript/openpgp.worker.min.js' }); // set the relative web worker path
+					
+				    const publicKeyArmored = '';
+					const privateKeyArmored = uploadedFiles.privateKey.contents; // encrypted private key
+					const passphrase = $('#passphrase').val(); // what the private key is encrypted with
+
+					var privateKey;
+				
+					try {
+						var openPrivateKey = await openpgp.key.readArmored(privateKeyArmored);
+						privateKey = openPrivateKey.keys[0];
+						
+						if (typeof(openPrivateKey.keys)=='undefined' || !openPrivateKey.keys.length) throw new Error('Invalid private key file');
+						await privateKey.decrypt(passphrase)
+					} catch (error) {
+						await openpgp.destroyWorker();
+						showError(error.message);
+						console.log(error);
+						return false;
+					}
+
+
+					var encrypted = uploadedFiles.encryptedFile.contents;
+					var decrypted;
+					try {
+						console.log( encrypted );
+						console.log( privateKey );
+						const { data: decrypted } = await openpgp.decrypt({
+							message: await openpgp.message.readArmored(encrypted),              // parse armored message
+							// publicKeys: (await openpgp.key.readArmored(publicKeyArmored)).keys, // for verification (optional)
+							privateKeys: [privateKey]                                           // for decryption
+						});
+					} catch (error) {
+						await openpgp.destroyWorker();
+						var message = error.message;
+						if (message=='Misformed armored text') message = 'The encrypted file does not look like it is a PGP encrypted data file';
+						showError(message);
+						return false;
+					}
+						
+					console.log(uploadedFiles.encryptedFile);
+					filename = uploadedFiles.encryptedFile.filename.replace(/.asc$/,'');
+					downloadBlob(decrypted, filename, 'application/octet-stream');
+					$('#UI').hide();
+					$('#success').show();
+					await openpgp.destroyWorker();
+				})();
+			}
+			
+			
+		}
+	
+		$('.file-input').on('change', function() {
+			var self = $(this);
+			files = self.get(0).files;
+			
+			if(files.length == 0) {
+				alert('Error : No file selected');
+				return;
+			}
+
+			// first file selected by user
+			var file = files[0];
+			console.log(file);
+			
+			// perform validation on file type & size if required
+
+			// read the file
+			var reader = new FileReader();
+
+			// file reading started
+			reader.addEventListener('loadstart', function() {
+				console.log('File reading started');
+			});
+
+			// file reading finished successfully
+			reader.addEventListener('load', function(e) {
+			   // contents of file in variable     
+				var text = e.target.result;
+
+				self.closest('div').html(self.attr('loadMessage'));
+				uploadedFiles[self.attr('dest')] = {
+					filename: file.name,
+					contents: text
+				};
+				
+				if (fileEventHandlers[self.attr('onload')]) fileEventHandlers[self.attr('onload')]()
+				
+				console.log(text);
+			});
+
+			// file reading failed
+			reader.addEventListener('error', function() {
+				alert('Error : Failed to read file');
+			});
+
+			// file read progress 
+			reader.addEventListener('progress', function(e) {
+				if(e.lengthComputable == true) {
+					var percent_read = Math.floor((e.loaded/e.total)*100);
+					console.log(percent_read + '% read');
+				}
+			});
+
+			// read as text file
+			reader.readAsBinaryString(file);
+		});
+
+	})
+	</script>
+
+</head>
+<body>
+
+<div id="UI">
+	<div id="chooseAction">
+		<button id="encryptButton">Encrypt</button> or 
+		<button id="decryptButton">Decrypt</button>
+	</div>
+
+	<div id="decryptUI" class="hideOnLoad">
+
+		<div id="choosePrivateKeyFile" class="active">
+			Select your private key file: <input type="file" class="file-input" dest="privateKey" loadmessage="Private key loaded successfully" onload="getEncryptedFile" />
+		</div>
+		<div id="enterPassphrase" class="hideOnLoad">
+			Enter your passphrase: <input type="password" size="40" id="passphrase"/>
+		</div>
+		<div id="chooseEncryptedFile" class="hideOnLoad">
+			Then select the encrypted data file: <input type="file" class="file-input" dest='encryptedFile' loadmessage="Encrypted data loaded successfully" onload="decrypt" />
+		</div>
+		<div id="decrypting" class="hideOnLoad">
+			Please wait.... decrypting file....
+		</div>
+		
+	</div>
+</div>
+<div id="success" class="hideOnLoad">
+	<h1>ALL DONE!</h1>
+	<a href="">Go again</a>
+</div>
+
+<div id="error" class="hideOnLoad">
+	<h1>Error</h1>
+	<div class="message">
+	</div>
+	<a href="">Try again</a>
+</div>
+
+</body>
