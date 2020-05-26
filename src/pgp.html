@@ -1,0 +1,372 @@
+<html>
+<head>
+	<style>
+		body {
+			font-family: arial, sans-serif;
+			padding: 20px;
+		}
+		.hideOnLoad { display: none; }
+
+		#chooseAction button {
+			border: 2px solid red;
+			padding: 10px;
+			font-size: 30px;
+		}
+
+		#UI > div {
+			line-height: 40px;
+		}
+		
+		#UI > div div {
+			padding: 10px;
+		}
+		
+		#UI > div .active {
+			border: 2px solid red;
+		}
+			
+		#UI > div > div::before {
+			display: block;
+			float: left;
+			color: red;
+			font-size: 40px;
+			padding-right: 10px;
+		}
+		
+		#choosePrivateKeyFile::before { content: 'Step 1'; }
+		#enterPassphrase::before { content: 'Step 2'; }
+		#chooseEncryptedFile::before { content: 'Step 3'; }
+
+		#choosePublicKeyFile::before { content: 'Step 1'; }
+		#chooseFile::before { content: 'Step 2'; }
+		
+	</style>
+	
+	<script src="javascript/jquery.js" ></script>
+	<script src="javascript/openpgp.min.js"></script>
+	<script>
+	
+
+	window.onunload = function(event) {
+		(async () => {
+			await openpgp.destroyWorker();
+		})();
+	};
+	
+	function downloadBlob(data, fileName, mimeType) {
+	  var blob, url;
+	  blob = new Blob([data], {
+		type: mimeType
+	  });
+	  url = window.URL.createObjectURL(blob);
+	  downloadURL(url, fileName);
+	  setTimeout(function() {
+		return window.URL.revokeObjectURL(url);
+	  }, 1000);
+	};
+
+	function downloadURL(data, filename) {
+	  var a;
+	  a = document.createElement('a');
+	  a.href = data;
+	  a.download = filename;
+	  document.body.appendChild(a);
+	  a.style = 'display: none';
+	  a.click();
+	  a.remove();
+	};
+
+	// pass the string as an array to acheive pass-by-reference rather than creating another copy of the data
+	function convertBinaryStringToUint8Array(bStr) {
+		var i, len = bStr[0].length, u8_array = new Uint8Array(len);
+		for (var i = 0; i < len; i++) {
+			u8_array[i] = bStr[0].charCodeAt(i);
+		}
+		return u8_array;
+	}
+	
+	$(function(){
+		
+		var uploadedFiles = {};
+	
+		$('#decryptButton').on('click',function(){
+			$('#decryptUI').show();
+			$('#choosePrivateKeyFile input').focus();
+			$('#chooseAction').hide();
+		});
+
+		$('#encryptButton').on('click',function(){
+			$('#encryptUI').show();
+			$('#choosePublicKeyFile input').focus();
+			$('#chooseAction').hide();
+		});
+
+		var privateKey;
+		var publicKeys;
+		
+		var passphrase;
+		$('#passphrase').on('change',function() {
+			var self = $(this);
+			passphrase = self.val();
+			self.val(passphrase.replace(/./g,'-'));
+
+			(async () => {
+
+				try {
+					await privateKey.decrypt(passphrase)
+					
+					$('#passphrase').closest('div').html('Passphrase succesfully entered');
+					$('#chooseEncryptedFile input').focus();
+					
+				} catch (error) {
+					window.alert(error.message);
+					$('#passphrase').val('').focus();
+					return false;
+				}
+			})();
+			
+		})
+		
+		$('#chooseEncryptedFile').on('focusin',function() {
+			$('#enterPassphrase').removeClass('active');
+			$(this).addClass('active');
+		});
+
+		function showError(message) {
+			$('#UI').hide();
+			$('#error').show();
+			$('#error .message').html(message);
+		}
+
+		/*
+		Removed the use of the web worker as this is optional and prevents the code from running locally (i.e. from a file:// URI)
+		(async () => {						
+			await openpgp.initWorker({ path: 'javascript/openpgp.worker.min.js' }); // set the relative web worker path			
+		})()
+		*/
+		
+		var fileEventHandlers = {
+			'getEncryptedFile' : function(input) {
+				// check the private key looks OK
+				(async () => {
+
+					try {
+						var openPrivateKey = await openpgp.key.readArmored(uploadedFiles.privateKey.contents);
+						privateKey = openPrivateKey.keys[0];
+						
+						if (typeof(openPrivateKey.keys)=='undefined' || !openPrivateKey.keys.length) throw new Error('Invalid private key file');
+					} catch (error) {
+						window.alert(error.message);
+						return false;
+					} finally {
+						uploadedFiles.privateKey.contents = '';
+					}
+					if (!privateKey) return false;
+
+					$('#choosePrivateKeyFile').removeClass('active').closest('div').html('Private key successfully loaded');
+					$('#enterPassphrase').show().addClass('active');
+					$('#chooseEncryptedFile').show();
+					$('#passphrase').focus();
+					
+				})();
+			},
+			
+			'decrypt' : function() {
+				$('#chooseEncryptedFile').removeClass('active').closest('div').html('Encrypted file successfully loaded');
+				$('#decrypting').show();
+				
+				(async () => {
+				
+					var encrypted = uploadedFiles.encryptedFile.contents;
+					var decrypted;
+					try {
+						var decryptOutput = await openpgp.decrypt({
+							format: 'binary',
+							message: await openpgp.message.readArmored(encrypted),              // parse armored message
+							// publicKeys: (await openpgp.key.readArmored(publicKeyArmored)).keys, // for verification (optional)
+							privateKeys: [privateKey]                                           // for decryption
+						});
+						decrypted = decryptOutput.data;
+					} catch (error) {
+						await openpgp.destroyWorker();
+						privateKey = '';
+						var message = error.message;
+						if (message=='Misformed armored text') message = 'The encrypted file does not look like it is an ascii armoured PGP encrypted data file';
+						showError(message);
+						return false;
+					}
+						
+					privateKey = '';
+					filename = uploadedFiles.encryptedFile.filename.replace(/.asc$/,'');
+					downloadBlob(decrypted, filename, 'application/octet-stream');
+					$('#UI').hide();
+					$('#success').show();
+					await openpgp.destroyWorker();
+				})();
+			},
+			
+			'getFile' : function() {
+				// check the private key looks OK
+				(async () => {
+
+					try {
+						var openPublicKey = await openpgp.key.readArmored(uploadedFiles.publicKey.contents);
+						publicKeys = openPublicKey.keys[0];
+						
+						if (typeof(openPublicKey.keys)=='undefined' || !openPublicKey.keys.length) throw new Error('Invalid public key file');
+					} catch (error) {
+						window.alert(error.message);
+						return false;
+					} finally {
+						uploadedFiles.publicKey.contents = '';
+					}
+					if (!publicKeys) return false;
+
+					$('#choosePublicKeyFile').removeClass('active').closest('div').html('Public key successfully loaded');
+					$('#chooseFile').show().addClass('active').find('input').focus();
+					
+				})();
+			},
+
+			'encrypt' : function() {
+				$('#chooseFile').removeClass('active').closest('div').html('File successfully loaded');
+				$('#encrypting').show();
+				
+				(async () => {
+				
+					var encrypted;
+					try {
+						var encryptOutput = await openpgp.encrypt({
+							message: openpgp.message.fromBinary(convertBinaryStringToUint8Array([uploadedFiles.file.contents])),
+							publicKeys: publicKeys,
+						});
+						encrypted = encryptOutput.data;
+					} catch (error) {
+						await openpgp.destroyWorker();
+						uploadedFiles.file.contents='';
+						var message = error.message;
+						showError(message);
+						return false;
+					}
+						
+					filename = uploadedFiles.file.filename+'.asc';
+					uploadedFiles.file.contents='';
+					downloadBlob(encrypted, filename, 'application/octet-stream');
+					$('#UI').hide();
+					$('#success').show();
+					await openpgp.destroyWorker();
+				})();
+			},
+			
+			
+		}
+	
+		$('.file-input').on('change', function() {
+			var self = $(this);
+			files = self.get(0).files;
+			
+			if(files.length == 0) {
+				alert('Error : No file selected');
+				return;
+			}
+
+			// first file selected by user
+			var file = files[0];
+			
+			// perform validation on file type & size if required
+
+			// read the file
+			var reader = new FileReader();
+
+			// file reading finished successfully
+			reader.addEventListener('load', function(e) {
+			   // contents of file in variable     
+				var text = e.target.result;
+
+				uploadedFiles[self.attr('dest')] = {
+					filename: file.name,
+					contents: text
+				};
+				
+				if (fileEventHandlers[self.attr('onload')]) {
+					fileEventHandlers[self.attr('onload')](self);
+				}
+				
+			});
+
+			// file reading failed
+			reader.addEventListener('error', function() {
+				alert('Error : Failed to read file');
+			});
+
+			// file read progress 
+			reader.addEventListener('progress', function(e) {
+				if(e.lengthComputable == true) {
+					var percent_read = Math.floor((e.loaded/e.total)*100);
+					console.log(percent_read + '% read');
+				}
+			});
+
+			// read as text file
+			reader.readAsBinaryString(file);
+		});
+
+	})
+	</script>
+
+</head>
+<body>
+
+<div id="UI">
+	<div id="chooseAction">
+		<button id="encryptButton">Encrypt</button> or 
+		<button id="decryptButton">Decrypt</button>
+	</div>
+
+	<div id="decryptUI" class="hideOnLoad">
+
+		<div id="choosePrivateKeyFile" class="active">
+			Select your private key file: <input type="file" class="file-input" dest="privateKey" loadmessage="Private key loaded successfully" onload="getEncryptedFile" />
+		</div>
+		<div id="enterPassphrase" class="hideOnLoad">
+			Enter your passphrase: <input type="password" size="40" id="passphrase"/>
+		</div>
+		<div id="chooseEncryptedFile" class="hideOnLoad">
+			Then select the encrypted data file: <input type="file" class="file-input" dest='encryptedFile' loadmessage="Encrypted data loaded successfully" onload="decrypt" />
+		</div>
+		<div id="decrypting" class="active hideOnLoad">
+			Please wait.... decrypting file....<br />
+			<br />
+			The file will automatically download when decryption is complete.
+		</div>
+		
+	</div>
+
+	<div id="encryptUI" class="hideOnLoad">
+
+		<div id="choosePublicKeyFile" class="active">
+			Select the public key file for the intended recipient: <input type="file" class="file-input" dest="publicKey" onload="getFile" />
+		</div>
+		<div id="chooseFile" class="hideOnLoad">
+			Then select the file you want to encrypt: <input type="file" class="file-input" dest='file' onload="encrypt" />
+		</div>
+		<div id="encrypting" class="active hideOnLoad">
+			Please wait.... encrypting file....
+		</div>
+		
+	</div>
+
+</div>
+<div id="success" class="hideOnLoad">
+	<h1>ALL DONE!</h1>
+	<a href="">Go again</a>
+</div>
+
+<div id="error" class="hideOnLoad">
+	<h1>Error</h1>
+	<div class="message">
+	</div>
+	<a href="">Try again</a>
+</div>
+
+</body>
