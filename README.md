@@ -1,7 +1,9 @@
 simplePGP
 =========
 
-This is a very simple and limited (but still fully functional) browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/). You can run it live from the demo page, save it and run it locally (see "Local Installation" below, or clone this repository.
+This is a very simple and limited (but still fully functional) browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/).
+
+To use simplePGP, you can run it live from the demo page, save it to your local machine and run it from there (see "Local Installation" below), or clone this repository.
 
 Demo
 ====
