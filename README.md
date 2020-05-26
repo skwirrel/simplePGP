@@ -77,16 +77,31 @@ A box will appear where you can enter the passphrase for your secret key
 
 **Step 6**
 
-Select the file containing the encrypted data (the file you saved in Step 1 above).
+Click the "Choose File" button to choose the file containing the encrypted data (the file you saved in Step 1 above).
 
 **Step 7**
 
-The file will be decrypted by your browser and a file download popup will appear asking where you want to put the decrypted file.
-
-**Step 8**
-
-Choose somewhere to save the decrypted file and you are all done.
+The file will be decrypted by your browser and the decrypted file automatically downloaded to your broweser's default downloads directory. The filename will be the name of the original file with any trailing ".asc" removed (if there was one).
 
 ### Encrypting a Message
 
-Not implemented yet!
+**Step 1**
+
+Bring up simplePGP in your browser for example by going to [https://skwirrel.github.io/simplePGP/pgp.html](https://skwirrel.github.io/simplePGP/pgp.html)
+
+**Step 2**
+
+Choose "Encrypt"
+
+**Step 3**
+
+Click the "Choose File" button to choose the public key file for the message recipient.
+
+**Step 4**
+
+Click the "Choose File" button to choose the file you want to encrypt.
+
+**Step 5**
+
+The file will be encrypted by your browser and the encrypted file automatically downloaded to your broweser's default downloads directory. The filename will be the name of the original file with ".asc" appended to the end.
+
