@@ -84,7 +84,6 @@
 	}
 	
 	window.onload = function(){
-		console.log('loaded');
 		
 		var uploadedFiles = {};
 	
@@ -180,9 +179,15 @@
 					var encrypted = uploadedFiles.encryptedFile.contents;
 					var decrypted;
 					try {
+                        var message;
+                        if (uploadedFiles.encryptedFile.filename.match(/\.asc$/)) {
+                            message = await openpgp.message.readArmored(encrypted);
+                        } else {
+                            message = await openpgp.message.read(convertBinaryStringToUint8Array([encrypted]));
+                        }
 						var decryptOutput = await openpgp.decrypt({
 							format: 'binary',
-							message: await openpgp.message.readArmored(encrypted),              // parse armored message
+							message: message,
 							// publicKeys: (await openpgp.key.readArmored(publicKeyArmored)).keys, // for verification (optional)
 							privateKeys: [privateKey]                                           // for decryption
 						});
@@ -197,7 +202,7 @@
 					}
 						
 					privateKey = '';
-					filename = uploadedFiles.encryptedFile.filename.replace(/.asc$/,'');
+					filename = uploadedFiles.encryptedFile.filename.replace(/\.(asc|pgp)$/,'');
 					downloadBlob(decrypted, filename, 'application/octet-stream');
 					$('#UI').hide();
 					$('#success').show();
@@ -239,8 +244,15 @@
 						var encryptOutput = await openpgp.encrypt({
 							message: openpgp.message.fromBinary(convertBinaryStringToUint8Array([uploadedFiles.file.contents])),
 							publicKeys: publicKeys,
+                            armor: false
 						});
-						encrypted = encryptOutput.data;
+                        if (typeof(encryptOutput.data)!='undefined') {
+                            encrypted = encryptOutput.data;
+					        filename = uploadedFiles.file.filename+'.asc';
+                        } else {
+                            encrypted = encryptOutput.message.packets.write();
+					        filename = uploadedFiles.file.filename+'.pgp';
+                        }
 					} catch (error) {
 						await openpgp.destroyWorker();
 						uploadedFiles.file.contents='';
@@ -249,7 +261,6 @@
 						return false;
 					}
 						
-					filename = uploadedFiles.file.filename+'.asc';
 					uploadedFiles.file.contents='';
 					downloadBlob(encrypted, filename, 'application/octet-stream');
 					$('#UI').hide();
