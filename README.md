@@ -1,7 +1,9 @@
 simplePGP
 =========
 
-This is a very simple and limited browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/)
+This is a very simple and limited (but still fully functional) browser based PGP encryption/decryption utility. Most of the hard work is done by [OpenPGP.js](https://openpgpjs.org/).
+
+To use simplePGP, you can run it live from the demo page, save it to your local machine and run it from there (see "Local Installation" below), or clone this repository.
 
 Demo
 ====
@@ -18,6 +20,10 @@ Limitations
 - It does not currently support signing or verifying signatures.
 - It can only handle ascii-armoured files (both for keys and for encrypted data).
 - It does not handle generation of keys yet - you will have to do that elsewhere (e.g. using https://gnupg.org/ )
+
+Local Installation
+------------------
+For extra paranoia/convenience you might want to have your own local installation. That's fine and easy to do. simplePGP consists of just a single monolithic HTML file. Just [open the demo page](https://skwirrel.github.io/simplePGP/pgp.html) then right-click and select "Save as..." or whatever the equivalent is in your browser. Save the file `pgp.html` anywhere you want. When you want to use simplePGP just double click the file `pgp.html` you just saved and it should appear ready for use in your browser.
 
 Suggested Use
 -------------
