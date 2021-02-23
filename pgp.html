@@ -180,7 +180,7 @@
 					var decrypted;
 					try {
                         var message;
-                        if (uploadedFiles.encryptedFile.filename.match(/\.asc$/)) {
+                        if (encrypted.match(/-----BEGIN PGP MESSAGE-----/)) {
                             message = await openpgp.message.readArmored(encrypted);
                         } else {
                             message = await openpgp.message.read(convertBinaryStringToUint8Array([encrypted]));

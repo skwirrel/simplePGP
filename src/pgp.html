@@ -85,7 +85,7 @@
 		return u8_array;
 	}
 	
-	$(function(){
+	window.onload = function(){
 		
 		var uploadedFiles = {};
 	
@@ -140,7 +140,7 @@
 
 		/*
 		Removed the use of the web worker as this is optional and prevents the code from running locally (i.e. from a file:// URI)
-		(async () => {						
+		(async () => {
 			await openpgp.initWorker({ path: 'javascript/openpgp.worker.min.js' }); // set the relative web worker path			
 		})()
 		*/
@@ -181,7 +181,7 @@
 					var decrypted;
 					try {
                         var message;
-                        if (uploadedFiles.encryptedFile.filename.match(/\.asc$/)) {
+                        if (encrypted.match(/-----BEGIN PGP MESSAGE-----/)) {
                             message = await openpgp.message.readArmored(encrypted);
                         } else {
                             message = await openpgp.message.read(convertBinaryStringToUint8Array([encrypted]));
@@ -323,7 +323,7 @@
 			reader.readAsBinaryString(file);
 		});
 
-	})
+	};
 	</script>
 
 </head>
