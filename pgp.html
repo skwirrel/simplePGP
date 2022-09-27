@@ -332,6 +332,40 @@
 	<div id="chooseAction">
 		<button id="encryptButton">Encrypt</button> or 
 		<button id="decryptButton">Decrypt</button>
+		
+		<h2>How PGP Works</h2>
+		<p>This pages provides a very simple step-by-step interface for PGP encrypting/decrypting files. Before using this it is important to understand that PGP encryption is probably different to any encryption you have encountered before.</p>
+
+		<p>Most "normal" encryption uses a single password to both encrypt and decrypt the data - this approach is known as "symmetric encryption".</p>
+
+		<p>PGP uses asymmetric encryption which means that there are two passwords (generally referrerd to as "keys") - one for encrypting data and a different one for decrypting the data. The encyrpting password is known as the "public key" and its decrypting sibling is known as the "private key". Every one who wants to use PGP will generally have just one pair of keys consisting of their public and their private key. They use the same pair of keys for all messages/files - as opposed to "normal" symmetric encryption where you might use a different password for evey file/message, or for each person you exchange data with.</p>
+
+		<p>Having someone's public key means you can create an encrypted message that only they can decrypt. Knowing their public key is absolutely no help when it comes to decrypting their messages. The only thing that can decyrpt their messages is their private key. So in practice, each user gives their public key to anyone who wants to send them a message. The sender gives this key to PGP to encrypt the message and sends the resulting encrypted message to the recipient. The recipient can then use the private key (which, as it's name suggests, they don't give to anyone else) to decrypt the messages sent to them.</p>
+
+		<p>There is one extra slight complication that you need to understand. The keys are much longer than normal passwords, so you don't memorize them and type them in, rather they are stored in files. Of course this means that they are at risk of being leaked or stolen. This doesn't matter for the public key - you could give this to your worst enemy and it wouldn't help them in decyrpting your messages. However, it is a big problem for your private key - it is really important that noone else can get their hands on this. To address this problem the private key is almost always encrypted with "normal" symmetric encryption with a password that the key-owner can memorize. When the recipient wants to read a message they provide PGP with the encrypted message, their private key file, and the password used to protect their private key. PGP can then use the password to decrypt the private key and then use the private key to decrypt the message.</p>
+
+		<p>Given the sensitivity of the data being exchanged private keys are normally encrypted with a longer password - therefore this is typically referred to as a passphrase, rather than a password. A passphrase is exactly the same as a password - just longer.</p>
+
+		<h3>In summary</h3>
+		<ul>
+		    <li>You typically have just one PGP key pair consisting of a public key and a private key
+		    <li>You give the public key to anyone who wants to send you an encrypted file/message
+		    <li>The private key is used by you to decrypt messaged
+		    <li>You give the private key to noone
+		    <li>To keep the private key even more secure it is encrypted with a passphrase
+		    <li>You need to have both your private key file and its passphrase every time you want to decrypt a message/file
+		</ul>
+
+		<h3>Things to remember</h3>
+		<ol>
+		    <li>You can give your public key to anyone - this will not compromise the security of your messages. There is no need to worry about emailing your public key  to people and no need to protect this in transit.
+		    <li>Keep your private key file as safe as you can. It still can't be used without also knowing the password that it is locked with, but even so, you should do your best to keep it safe. Of course, you should never tell anyone the passphrase for your private key.
+		    <li>DON'T LOSE YOUR PRIVATE KEY FILE, or forget the password for it. If you do this then you won't be able to decrypt the messages/files sent to you and you will need to create a new key pair and distribute the new public key to everyone who sends you encrypted messages.
+		</ol>
+		<h3>A note on file extentions</h3>
+
+		<p>By default Windows hides file extentions for known file types. Quite apart from being a really stupid idea from a security standpoint (see <a target="_blank" href="https://www.bleepingcomputer.com/news/microsoft/hiding-windows-file-extensions-is-a-security-risk-enable-now/">this article</a> ) , this also gets very confusing when dealing with encrypted files because these will often have two extentions e.g. my_file.xls.pgp or my_file.xls.asc. When the final extension is hidden by Windows it can be confusing to see a file called "my_file.xls" which you thinks is an Excel file, but in fact it is an encrypted Excel file. I strongly advise you disable this feature as shown in <a target="_blank" href="https://www.bleepingcomputer.com/news/microsoft/hiding-windows-file-extensions-is-a-security-risk-enable-now/">this article</a>.</p>
+
 	</div>
 
 	<div id="decryptUI" class="hideOnLoad">
